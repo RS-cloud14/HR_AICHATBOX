@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HR Assessment AI</title>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; background: #f8f9fa; height: 100vh; display: flex; flex-direction: column; }
+    .chat-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; text-align: center; }
+    .chat-messages { flex: 1; overflow-y: auto; padding: 15px; }
+    .message { margin-bottom: 12px; display: flex; }
+    .message.user { justify-content: flex-end; }
+    .message-content { max-width: 75%; padding: 10px 14px; border-radius: 15px; }
+    .message.user .message-content { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+    .message.assistant .message-content { background: white; border: 1px solid #e0e0e0; }
+    .chat-input { padding: 15px; background: white; border-top: 1px solid #e0e0e0; display: flex; gap: 8px; }
+    .chat-input input { flex: 1; padding: 10px 14px; border: 2px solid #e0e0e0; border-radius: 20px; }
+    .chat-input button { padding: 10px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 20px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="chat-header">
+    <h2>🤖 HR Assessment AI Assistant</h2>
+    <p>Ask about the HR Aging Workforce Assessment Tool</p>
+  </div>
+
+  <div class="chat-messages" id="chatMessages"></div>
+
+  <div class="chat-input">
+    <input type="text" id="messageInput" placeholder="Ask a question..." onkeypress="handleKeyPress(event)">
+    <button onclick="sendMessage()" id="sendBtn">Send</button>
+  </div>
+
+  <script>
+    const API_URL = '/api/chat';
+    const systemContext = `You are an AI assistant for the HR Aging Workforce Assessment Tool...`;
+
+    function addMessage(role, content) {
+      const messagesDiv = document.getElementById('chatMessages');
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message ${role}`;
+      const contentDiv = document.createElement('div');
+      contentDiv.className = 'message-content';
+      contentDiv.textContent = content;
+      messageDiv.appendChild(contentDiv);
+      messagesDiv.appendChild(messageDiv);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById('messageInput');
+      const message = input.value.trim();
+      if (!message) return;
+      addMessage('user', message);
+      input.value = '';
+
+      addMessage('assistant', 'Thinking...');
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: `${systemContext}\n\nUser: ${message}` }] }],
+            generationConfig: { temperature: 0.7, maxOutputTokens: 512 }
+          })
+        });
+        const data = await response.json();
+        document.querySelector('.assistant:last-child .message-content').textContent =
+          data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response.';
+      } catch (e) {
+        document.querySelector('.assistant:last-child .message-content').textContent = 'Error: ' + e.message;
+      }
+    }
+
+    function handleKeyPress(e) {
+      if (e.key === 'Enter') sendMessage();
+    }
+  </script>
+</body>
+</html>
